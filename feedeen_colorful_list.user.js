@@ -6,6 +6,7 @@
 // @version     0.1
 // @grant       GM_addStyle
 // @author     Alty <fujihisa@gmail.com>
+// @updateURL	http://userscripts.org/scripts/show/172431
 // @version    20130702
 // ==/UserScript==
 
