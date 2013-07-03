@@ -17,4 +17,5 @@ Firefox用Greasemonkeyスクリプトを置いています。Chromeでも動く�
 	* 既知の問題点
 		* 選択中のアイテムの色が分からない。n,pキーで移動するときに困る。
 		* サイト名によっては、背景色が同じになることがある。
-	* ![キャプチャ画像](https://raw.github.com/Alty/greasemonkey/master/colorfulfeedeen.jpg)
+	* 画像サンプル（2013/7/03現在のものです）
+		* ![キャプチャ画像](https://raw.github.com/Alty/greasemonkey/master/colorfulfeedeen.jpg)
