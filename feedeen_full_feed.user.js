@@ -1115,7 +1115,7 @@ FullFeed.checkRegister = function() {
 FullFeed.registerWidgets = function() {
   var el, flag = false, c = new getCurrentItem();
   if (!c.item_container) return;
-  el = returnXpathEntry.querySelector('.fd_sitename').parentNode; // feedeen
+  el = returnXpathEntry().querySelector('.fd_sitename').parentNode; // feedeen
   if (el) {
     el.some(function(i) {
       if (hasClass(i, 'gm_fullfeed_checked')) {
@@ -1211,10 +1211,10 @@ FullFeed.registerSocialIcons = function() {
   var el, c = new getCurrentItem();
   if (!c.item_container) return;
 //  el = getElementsByXPath(returnXpathEntry() + '//div[@class="entryHeader"]/span[@class="gm_fullfeed_socialicon"]');
-  el = returnXpathEntry().querySelector('span.gm_fullfeed_socialicon').
+  el = returnXpathEntry().querySelector('span.gm_fullfeed_socialicon');
   if (el) return;
 //  var container = getFirstElementByXPath(returnXpathEntry() + '//div[@class="entryHeader"]');
-  var container = returnXpathEntry() querySelector('.fd_sitename').parentNode;
+  var container = returnXpathEntry().querySelector('.fd_sitename').parentNode;
   var itemScheme = c.itemURL.slice(0, c.itemURL.indexOf("://")+3);
   var itemUrl2 = c.itemURL.slice(c.itemURL.indexOf("://")+3).replace(/#/g, '%23');
   if (!container) return;
