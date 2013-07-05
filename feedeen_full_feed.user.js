@@ -2,8 +2,9 @@
 // @name    Feedeen Full Feed
 // @description    Feedeenでアイテムの全文を表示します。
 // @id    FeedeenFullFeed
-// @namespace    https://userscripts.org/
-// @updateURL    https://userscripts.org/
+// @homepage   http://userscripts.org/scripts/show/172673
+// @namespace   http://userscripts.org/scripts/show/172673
+// @updateURL    http://userscripts.org/scripts/show/172673.meta.js
 // @include    http://feedeen.com/d
 // @grant    GM_addStyle
 // @grant    GM_log
@@ -13,8 +14,6 @@
 // @grant    GM_xmlhttpRequest
 // @version    0.10
 // ==/UserScript==
-
-// 
 
 // Based on "Feedly Full Feed" : 
 // http://fxwiki.blog63.fc2.com/
