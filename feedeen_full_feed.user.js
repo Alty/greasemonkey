@@ -30,9 +30,9 @@ var CSS = [
   '#timeline .entryBody .clear { font-size: inherit !important; height: auto !Important; width: auto !important; }',
   '.u100Entry .title { display: inline !important; }',
 */
-  '.fd_itemlist .entryTitle img { border: none; vertical-align: text-top; }',
-  '.fd_itemlist .entryTitle span a { margin: 0 3px; }',
-  '.fd_itemlist .fd_item>div>iframe .clear { font-size: inherit !important; height: auto !Important; width: auto !important; }',
+  '.fd_itemlist .expanded .fd_sitename img { border: none; vertical-align: text-top; }',
+  '.fd_itemlist .expanded .fd_sitename span a { margin: 0 3px; }',
+  '.fd_itemlist .exported iframe .clear { font-size: inherit !important; height: auto !Important; width: auto !important; }',
 //  '.u100Entry .title { display: inline !important; }',
   '.gm_fullfeed_loading {  }',
   '.gm_fullfeed_loading2 { border: 2px solid limegreen !important; margin: -2px 0 0 -2px !important; }',
