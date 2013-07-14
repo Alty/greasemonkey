@@ -1,13 +1,12 @@
 ﻿// ==UserScript==
 // @name        Feedeen Colorful List
 // @namespace   http://feedeen.colorful.list/
+// @updateURL	http://userscripts.org/scripts/show/172431.meta.js
 // @description Colorful Feedeen!
 // @include     http://feedeen.com/d
 // @version     0.1
 // @grant       GM_addStyle
 // @author     Alty <fujihisa@gmail.com>
-// @updateURL	http://userscripts.org/scripts/show/172431
-// @version    20130702
 // ==/UserScript==
 
 // 参考 //
@@ -60,9 +59,8 @@ function computeColor(title) {
 						"   background: hsl(" + color + ",70%,80%) !important; }" +
 						"div[colored='" + title + "']:hover {" +
 						"   background: hsl(" + color + ",90%,85%) !important; }");
-					} // if	
-				};
-			}
+				} // if	
+			} // else
 		}
     }, false);
 })();
