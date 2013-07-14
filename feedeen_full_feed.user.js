@@ -1,10 +1,10 @@
 ﻿// ==UserScript==
 // @name    Feedeen Full Feed
-// @description    Feedeenでアイテムの全文を表示します。
-// @id    FeedeenFullFeed
+// @description  Feedeenでアイテム記事の全文を表示します。
+// @id         FeedeenFullFeed
 // @homepage   http://userscripts.org/scripts/show/172673
-// @namespace   http://userscripts.org/scripts/show/172673
-// @updateURL    http://userscripts.org/scripts/show/172673.meta.js
+// @namespace  http://userscripts.org/scripts/show/172673
+// @updateURL  http://userscripts.org/scripts/show/172673.meta.js
 // @include    http://feedeen.com/d
 // @grant    GM_addStyle
 // @grant    GM_log
@@ -12,34 +12,22 @@
 // @grant    GM_registerMenuCommand
 // @grant    GM_setClipboard
 // @grant    GM_xmlhttpRequest
-// @version    0.10
+// @version    0.2
 // ==/UserScript==
 
-// Based on "Feedly Full Feed" : 
-// http://fxwiki.blog63.fc2.com/
-// http://userscripts.org/scripts/show/171868
-// Thanks fxwiki
+// Based on "Feedly Full Feed"    : http://userscripts.org/scripts/show/171868
+// Based on "InoReader Full Feed" : https://userscripts.org/scripts/show/172238
+// Thanks fxwiki : http://fxwiki.blog63.fc2.com/
 
 (function() {
-
 // == [CSS] =====================================
 var CSS = [
-/*
-  '#timeline .entryTitle img { border: none; vertical-align: text-top; }',
-  '#timeline .entryTitle span a { margin: 0 3px; }',
-  '#timeline .entryBody .clear { font-size: inherit !important; height: auto !Important; width: auto !important; }',
-  '.u100Entry .title { display: inline !important; }',
-*/
   '.fd_itemlist .expanded .fd_sitename img { border: none; vertical-align: text-top; }',
   '.fd_itemlist .expanded .fd_sitename span a { margin: 0 3px; }',
-  '.fd_itemlist .exported iframe .clear { font-size: inherit !important; height: auto !Important; width: auto !important; }',
-//  '.u100Entry .title { display: inline !important; }',
-  '.gm_fullfeed_loading {  }',
-  '.gm_fullfeed_loading2 { border: 2px solid limegreen !important; margin: -2px 0 0 -2px !important; }',
-  '.gm_fullfeed_loading3 { border: 2px solid limegreen !important; margin: -1px 0 0 -1px !important; }',
+  '.fd_itemlist .expanded iframe .clear { font-size: inherit !important; height: auto !Important; width: auto !important; }',
+  '.gm_fullfeed_loading { border-color: limegreen !important; }',
   '.gm_fullfeed_loaded * { position: static !important; }',
-  '.gm_fullfeed_opened1 { border: 2px solid gold !important; margin: -2px 0 0 -2px !important; }',
-  '.gm_fullfeed_opened2 { border: 2px solid gold !important; margin: -1px 0 0 -1px !important; }',
+  '.gm_fullfeed_opened { border-color: gold !important; }',
   '.gm_fullfeed_ap_on { color: #009900; }',
   '.gm_fullfeed_ap_off { color: #990000; }',
   '.gm_fullfeed_pager { margin: 3em 0; }',
@@ -47,7 +35,7 @@ var CSS = [
   '.gm_fullfeed_pager_differenthost { margin-left: 2em; font-weight: bold; }',
   '.gm_fullfeed_entry_url { font-size: 80%; }',
   '.gm_fullfeed_hidden { display: none; }',
-  '#gm_fullfeed_message { position: fixed; top: 8px; left: 8px; z-index: 90090; color: black; background-color: #FFEEAA; box-shadow: 1px 1px 2px #CCCCCC; padding: 4px 8px; }',
+  '#gm_fullfeed_message { position: fixed; top: 4px; right: 250px; z-index: 90900; color: black; background-color: #FFEEAA; box-shadow: 1px 1px 2px #CCCCCC; padding: 4px 8px; }',
   '.gm_fullfeed_warning { background-color: #FF9999 !important; }',
   '.gm_fullfeed_checked { margin-right: 4px; }',
   '.gm_fullfeed_checked_icon { color: white; font-size: 0.8em; margin-left: 0.5em; padding: 0 4px; text-decoration:none; cursor: pointer; position: relative; top: 0.3em; vertical-align: top; border-radius: 3px; box-shadow: 1px 1px 2px #CCCCCC; }',
@@ -66,8 +54,9 @@ var CSS = [
   '.gm_fullfeed_checked_icon_as_nonext:hover { background: #DDDDFF; background: linear-gradient(top, #DDDDFF, #BBBBEE); border: 1px solid #AAAADD; }',
   '.gm_fullfeed_socialicon { font-size: 12px; vertical-align: middle; }',
   '#gm_fullfeed_settings { background-color: #FFCC66; z-index: 90000; position: absolute; top: 8px; left: 8px; padding: 4px; width: 600px; border-radius: 4px; }',
-  '#gm_fullfeed_settings input, #gm_fullfeed_settings textarea { padding: 2px; }',
-  '#gm_fullfeed_settings fieldset { border: 1px solid #FFCC66; margin: 4px 2px; }',
+  '#gm_fullfeed_settings input[type="text"], #gm_fullfeed_settings textarea { padding: 2px; }',
+  '#gm_fullfeed_settings textarea { background-color: white; }',
+  '#gm_fullfeed_settings fieldset { border: 1px solid #FFCC66; margin: 4px 2px; background: none !important; }',
   '#gm_fullfeed_settings-header { padding: 0 4px 8px 4px; }',
   '#gm_fullfeed_settings-header_title { font-size: 120%; font-weight: bold; }',
   '#gm_fullfeed_settings-header_title a { color: #224488; text-decoration: none; }',
@@ -284,30 +273,23 @@ var $id = function(id) { return document.getElementById(id); };
 var $ids = function(id) { return $id('gm_fullfeed_settings-' + id); };
 
 var FullFeed = function(info, c, flag) {
+//console.log('FullFeed function');
   state = 'ready';
   this.itemInfo = c;
   this.info = info;
   this.requestURL = this.itemInfo.itemURL;
-  
   var u = this.requestURL;
-
-  /*
-  if (/^https?:\/\/www\.Feedeen\.com\/home#subscription\/feed\/https?:\/\/.+/.test(u)) {
-    u = u.slice(u.indexOf('/feed/')+6);
-    this.requestURL = decodeURIComponent(u.slice(0, u.indexOf('&')));
-  } else if (/^http:\/\/rd\.yahoo\.co\.jp\/rss\/l\/.+/.test(u)) {
+  if (/^http:\/\/rd\.yahoo\.co\.jp\/rss\/l\/.+/.test(u)) {
     if (/\/\*\-http/.test(u))
       this.requestURL = decodeURIComponent(u.slice(u.indexOf('*-http')+2));
     else if (/\/\*http/.test(u))
       this.requestURL = decodeURIComponent(u.slice(u.indexOf('*http')+1));
   }
-  */
-  //this.itemInfo.item_body = getFirstElementByXPath(returnXpathEntry() + '//div[contains(concat(" ", @class, " "), " entryBody ")]');
   this.itemInfo.item_body = returnFdExpanded().querySelector('iframe').parentNode;
 //console.log(this.itemInfo.item_body);
   var encode = this.info.enc || document.characterSet;
-  if (flag === 'next' && this.itemInfo.item_container) {
-    this.itemInfo.item_container.className.split(/\s+/).some(function(i) {
+  if (flag === 'next' && this.itemInfo.innerContents) {
+  this.itemInfo.innerContents.className.split(/\s+/).some(function(i) {
       if (!/^entry|^gm_|^http/.test(i)) {
         encode = i;
         return true;
@@ -315,23 +297,24 @@ var FullFeed = function(info, c, flag) {
     });
   }
   this.mime = 'text/html; charset=' + encode;
-  if (flag === 'search') this.request('HEAD');
-  else this.request('GET');
+  if (flag === 'search') this.request('HEAD', c);
+  else this.request('GET', c);
   if (debugLog) {
     try {
       GM_log(new Date());
-      GM_log('Item Title: ' + this.itemInfo.item.title);
-      GM_log('Item URL: ' + this.itemInfo.item.url);
-      GM_log('Feed URL: ' + this.itemInfo.feed.url);
-      GM_log('FullFeed URL: ' + this.info.url);
-      GM_log('FullFeed XPath: ' + this.info.xpath);
-      GM_log('FullFeed Encode: ' + this.info.enc);
+       GM_log('Item Title: ' + c.item.title);
+      GM_log('Item URL: ' + c.item.url);
+      GM_log('Feed URL: ' + c.feed.url);
+      GM_log('FullFeed URL: ' + info.url);
+      GM_log('FullFeed XPath: ' + info.xpath);
+      GM_log('FullFeed Encode: ' + info.enc);
       GM_log(this.info);
     } catch(e) {}
   }
 };
 
-FullFeed.prototype.request = function(m) {
+FullFeed.prototype.request = function(m, c) {
+//console.log('request:');
   if (!this.requestURL) return;
   state = 'request';
   var self = this;
@@ -340,9 +323,6 @@ FullFeed.prototype.request = function(m) {
     method: m,
     url: this.requestURL,
     overrideMimeType: this.mime,
-    headers: {
-      'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-    },
     onerror: function() {
       state = null;
       self.requestError.apply(self, ['Request Error']);
@@ -360,7 +340,7 @@ FullFeed.prototype.request = function(m) {
         }
       } else if (res.status === 200) {
         if (res.finalUrl) opt.url = this.requestURL = res.finalUrl;
-        readingPageUrl = self.itemInfo.item_container.className.split(/\s+/).filter(function(i) {
+        readingPageUrl = c.innerContents.className.split(/\s+/).filter(function(i) {
           return new RegExp(/^http/).test(i);
         }).slice(-1);
         readingPageUrl = (readingPageUrl.length) ? readingPageUrl.toString() : opt.url;
@@ -376,10 +356,10 @@ FullFeed.prototype.request = function(m) {
             var h1 = readingPageUrl.split('/')[2], h2 = opt.url.split('/')[2];
             var re = new RegExp(st.allownexturl, 'i');
             if (h1 === h2 || (st.allownexturl && re.test(readingPageUrl)))
-              self.requestLoad.apply(self, [res]);
+              self.requestLoad.call(self, res, c);
             else if (window.confirm(loc[59] + readingPageUrl + loc[60] + opt.url))
-              self.requestLoad.apply(self, [res]);
-            else self.requestEnd(false, true);
+              self.requestLoad.call(self, res, c);
+            else self.requestEnd(c, false, true);
           }
         } else if (opt.method === 'HEAD') {
           if (cset && st.autosearch) {
@@ -387,18 +367,18 @@ FullFeed.prototype.request = function(m) {
             opt.method = 'GET';
             opt.overrideMimeType = 'text/html; charset=' + cset;
             message(loc[1], -1);
-            loadingStyle('add', self.itemInfo.item_container);
+            loadingStyle('add', c.articleContainer);
             GM_xmlhttpRequest(opt);
           } else {
             state = null;
             if (st.cantdisplay) {
               message(loc[10], 2000);
-              loadingStyle('open', self.itemInfo.item_container);
+              loadingStyle('open', c.articleContainer);
               window.setTimeout(function() {
                 GM_openInTab(opt.url, true);
               }, 10);
               window.setTimeout(function() {
-                loadingStyle('remove', self.itemInfo.item_container);
+                loadingStyle('remove', c.articleContainer);
               }, 1000);
             } else message(loc[74], 3000);
           }
@@ -413,14 +393,14 @@ FullFeed.prototype.request = function(m) {
   if (opt.method === 'HEAD') message(loc[54], -1);
   else if (opt.method === 'GET') {
     message(loc[0], -1);
-    loadingStyle('add', this.itemInfo.item_container);
+    loadingStyle('add', c.articleContainer);
   }
   if (opt.url.indexOf('http:') !== 0 && this.info.base)
     opt.url = pathToURL(this.info.base, opt.url);
   GM_xmlhttpRequest(opt);
 };
 
-FullFeed.prototype.requestLoad = function(res) {
+FullFeed.prototype.requestLoad = function(res, c) {
   state = 'loading';
   var text = res.responseText;
   var html = createHTMLDocumentByString(text);
@@ -431,7 +411,7 @@ FullFeed.prototype.requestLoad = function(res) {
       doc = document.cloneNode(false);
       doc.appendChild(doc.importNode(document.documentElement, false));
     } catch(e) {
-      doc = document.implementation.createDocument(null, 'html', null);
+      doc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html', null);
     }
     try {
       tmpNode = doc.adoptNode(tmpNode);
@@ -484,37 +464,37 @@ FullFeed.prototype.requestLoad = function(res) {
         GM_openInTab(self.requestURL, true);
       }, 10);
       window.setTimeout(function() {
-        loadingStyle('remove', self.itemInfo.item_container);
+        loadingStyle('remove', c.articleContainer);
       }, 1000);
       return message(loc[10], 2000);
     }
   }
   if (entry) {
-    if (!hasClass(this.itemInfo.item_container, 'gm_fullfeed_loaded'))
+    if (!hasClass(c.innerContents, 'gm_fullfeed_loaded'))
       this.removeEntry();
-    entry = this.addEntry(entry);
-    if (!tmpElm && st.autosearch) this.requestEnd(true);
-    else this.requestEnd();
+    entry = this.addEntry(entry, c);
+    if (!tmpElm && st.autosearch) this.requestEnd(c, true);
+    else this.requestEnd(c);
   } else {
     state = null;
     this.requestError(loc[3]);
   }
 };
 
-FullFeed.prototype.requestEnd = function(as, halt) {
+FullFeed.prototype.requestEnd = function(c, as, halt) {
+//console.log('requestEnd:');
   state = 'loaded';
   window.setTimeout(function() {
     state = 'wait';
   }, 1000);
-  loadingStyle('remove', this.itemInfo.item_container);
-  addClass(this.itemInfo.item_container, this.info.enc || document.characterSet);
-  removeClass(this.itemInfo.item_container, 'entry-body-empty');
-  addClass(this.itemInfo.item_container, 'gm_fullfeed_loaded');
-  toggleClass(this.itemInfo.item_container, this.requestURL);
-//  var el = getFirstElementByXPath(returnXpathEntry() + '//span[contains(concat(" ", @class, " "), " gm_fullfeed_checked_icon ")]');
+  loadingStyle('remove', c.articleContainer);
+  addClass(c.innerContents, this.info.enc || document.characterSet);
+  removeClass(c.innerContents, 'entry-body-empty');
+  addClass(c.innerContents, 'gm_fullfeed_loaded');
+  toggleClass(c.innerContents, this.requestURL);
   var el = returnFdExpanded() .querySelector('span.gm_fullfeed_checked_icon'); // Feedeen
-  FullFeed.checkNextPage(this.itemInfo.item_container);
-  if (this.itemInfo.item_container.className.split(/\s+/).filter(function(i) {
+  FullFeed.checkNextPage(c.innerContents);
+  if (c.innerContents.className.split(/\s+/).filter(function(i) {
     return new RegExp(/^http/).test(i);
   }).length > 1) {
     if (nextPageLink) {
@@ -557,45 +537,54 @@ FullFeed.prototype.requestEnd = function(as, halt) {
 };
 
 FullFeed.checkScroll = function() {
+//console.log('checkScroll');
   if (!nextPageLink || (state && (state !== 'loaded' && state !== 'wait'))) return;
   window.clearTimeout(scrollInterval);
   scrollInterval = window.setTimeout(function() {
-    //var e1 = $id('box');
 	var e1 = document.querySelector('#main-loading').parentNode;
-//    var e2 = getFirstElementByXPath(returnXpathEntry());
-	var e2 =returnFdExpanded();
+	var e2 = returnFdExpanded();
 
     if (!e1 || !e2) return;
-    var npl = nextPageLink.offsetTop;
-    var remain = e2.offsetTop + npl - e1.offsetHeight - e1.scrollTop;
+    var remain = e2.offsetTop + nextPageLink.offsetTop - nextPageLink.offsetHeight - e1.offsetHeight - e1.scrollTop;
     if (remain < st.apheight) {
       nextPageLink = null;
       initFullFeed();
-	 } else {
-		console.log('checkScroll: Nullかも知れない。');
     }
   }, 100);
 };
 
 FullFeed.checkNextPage = function(con) {
+  var con2 = con.cloneNode(true);
   var aClass = con.className.split(/\s+/);
   var finalUrl = aClass[aClass.length - 1];
   var c = new getCurrentItem();
-  var bMatch, nextEl;
+  var bMatch;
   var check = function(data, flag) {
+    var nextEl, nextEl2;
     if (data.some(function(info) {
       if (info.url && info.url.length <= 12 && !/^\^?https?/i.test(info.url)) {
-        if (/^:\/\//i.test(info.url)) info.url = '^https?' + info.url;
-        else if (/^\/\//i.test(info.url)) info.url = '^https?:' + info.url;
+        if (new RegExp('^://', 'i').test(info.url)) info.url = '^https?' + info.url;
+        else if (new RegExp('^//', 'i').test(info.url)) info.url = '^https?:' + info.url;
         else info.url = '^https?://' + info.url;
       }
       if (!bMatch && new RegExp(info.url).test(finalUrl) && info.url.length > 12) {
-        var elms, bCache, bList, nextLink = info.nextLink;
+        var elms, elms2, bCache, bList, nextLink = info.nextLink;
         if (nextLink) nextLink = nextLink.replace(/id\(([^)]+)\)/g, '//*[@id=$1]');
-        if (nextLink) elms = getElementsByXPath(nextLink, con);
+        if (nextLink) {
+          elms2 = getElementsByXPath(nextLink, con2);
+          elms = getElementsByXPath(nextLink, con);
+        }
+        if (!elms2) elms2 = getElementsByXPath('//a[@rel="next"]', con2);
         if (!elms) elms = getElementsByXPath('//a[@rel="next"]', con);
-        if (elms && elms.length > 0) nextEl = elms[elms.length - 1];
-        if (nextEl && finalUrl !== nextEl.href) {
+        if (elms2 && elms2.length > 0) nextEl2 = elms2[elms2.length - 1];
+        if (elms && elms.length > 0 && nextEl2 && nextEl2.href) {
+          var arr = [];
+          for (var i=0,j=elms.length; i<j; i++) {
+            if (nextEl2.href === elms[i].href) arr.push(elms[i]);
+          }
+          nextEl = (arr.length) ? arr[arr.length - 1] : elms[elms.length - 1];
+        }
+        if (nextEl2 && finalUrl !== nextEl2.href) {
           if (flag === 'cache') {
             if (userCacheListAP.some(function(u) {
               if (u === c.feed.url) {
@@ -640,7 +629,7 @@ FullFeed.checkNextPage = function(con) {
           return true;
         } else return false;
       } else return false;
-    })) nextPageLink = nextEl;
+    })) nextPageLink = (nextEl) ? nextEl : null;
   };
   check(userSiteInfoAP, 'set');
   if (!bMatch) check(userCacheAP, 'cache');
@@ -661,8 +650,8 @@ FullFeed.checkNextPage = function(con) {
 FullFeed.prototype.requestError = function(e) {
   state = null;
   message('Error: ' + e, 5000, 'warning');
-  loadingStyle('remove', this.itemInfo.item_container);
-  addClass(this.itemInfo.item_container, 'gm_fullfeed_error');
+  loadingStyle('remove', this.itemInfo.articleContainer);
+  addClass(this.itemInfo.innerContents, 'gm_fullfeed_error');
 };
 
 FullFeed.prototype.removeEntry = function() {
@@ -673,30 +662,30 @@ FullFeed.prototype.removeEntry = function() {
   }
 };
 
-FullFeed.prototype.addEntry = function(entry) {
-  var info = this.itemInfo;
-  var url = this.requestURL || info.itemURL;
+FullFeed.prototype.addEntry = function(entry, c) {
+  var url = this.requestURL || c.itemURL;
+  var ic = (c.innerContents.id) ? $id(c.innerContents.id) : c.innerContents;
   var div = document.createElement('div');
-  if (info.item_body && info.item_body.hasChildNodes()) {
+  if (ic && ic.hasChildNodes()) {
     div.className = 'gm_fullfeed_pager';
-    var http = info.item_container.className.split(/\s+/).filter(function(i) {
+    var http = c.innerContents.className.split(/\s+/).filter(function(i) {
       return new RegExp(/^http/).test(i);
     });
     var host = (readingPageUrl.split('/')[2] !== url.split('/')[2]) ? '<span class="gm_fullfeed_pager_differenthost">( ' + readingPageUrl.split('/')[2] + ' &rarr; ' + url.split('/')[2] + ' )</span>' : '';
     div.innerHTML = '<hr />page: <a href="' + url + '" target="_blank">' + (http.length + 1) + '</a>' + host;
-    info.item_body.appendChild(div);
+    ic.appendChild(div);
   } else {
     div.className = 'gm_fullfeed_entry_url';
-    div.innerHTML = '<a href="' + url + '" target="_blank">' + url + '</a>';
+    div.innerHTML = '<a href="' + url + '" class="bluelink" target="_blank">' + url + '</a>';
     try {
-      if (info.item_body) info.item_body.parentNode.insertBefore(div, info.item_body);
+      if (ic) ic.parentNode.insertBefore(div, ic);
     } catch(er) {
       message('Error: ' + er, 5000, 'warning');
     }
   }
   return entry.map(function(i) {
     var pe = document.importNode(i, true);
-    if (info.item_body) info.item_body.appendChild(pe);
+    if (ic) ic.appendChild(pe);
     return pe;
   });
 };
@@ -708,9 +697,7 @@ FullFeed.resetCache = function() {
       var opt = {
         method: 'get',
         url: ctx.url,
-        headers: {
-          'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-        },
+        ignoreCache: true,
         onload: function(res) {
           if (res.status === 200) {
             if (flag) {
@@ -773,7 +760,9 @@ FullFeed.setCache = function(res, ctx, item, flag) {
       };
       try {
         localStorage.setItem('FeedeenFullFeed_cache', JSON.stringify(cacheInfo));
-      } catch(er2) {}
+      } catch(er2) {
+        if (er2 && er2.name && er2.message) window.alert(er2.name + '\n' + er2.message);
+      }
       localStorage.removeItem('FeedeenFullFeed_userCache');
       localStorage.removeItem('FeedeenFullFeed_userCacheList');
       userCache = [];
@@ -785,7 +774,9 @@ FullFeed.setCache = function(res, ctx, item, flag) {
       };
       try {
         localStorage.setItem('FeedeenFullFeed_cacheAP', JSON.stringify(cacheAPInfo));
-      } catch(er3) {}
+      } catch(er3) {
+        if (er3 && er3.name && er3.message) window.alert(er3.name + '\n' + er3.message);
+      }
       localStorage.removeItem('FeedeenFullFeed_userCacheAP');
       localStorage.removeItem('FeedeenFullFeed_userCacheListAP');
       userCacheAP = [];
@@ -828,10 +819,6 @@ FullFeed.loadSettings = function(data) {
     try {
       if (localStorage.getItem('FeedeenFullFeed_settings'))
         st = JSON.parse(localStorage.getItem('FeedeenFullFeed_settings'));
-
-
-
-
     } catch(er1) {}
   }
   var notA = function(a) {
@@ -925,63 +912,20 @@ FullFeed.createSettings = function() {
     li.innerHTML = i.body;
     $ids('list').appendChild(li);
   });
-  
-  //if ($id('FeedeenTabs')) {
-  // Feedeen
-  var div1 = document.querySelector('[tabindex]');
+  var div1 = document.querySelector('[tabindex]');  // Feedeen
   if (div1) {
     window.setTimeout(function() {
 
       if (div1) {
-
-
         var div2 = document.createElement('div');
+		div2.id = 'gm_fullfeed_settings-menu';
         div2.className = div1.childNodes[0].getAttribute('class');
         div2.innerHTML = '<div id="gm_fullfeed_settings-menu" style="color:inherit;" target="new" class="label">Feedeen Full Feed ' + loc[21] + '</div>';
         div1.appendChild(div2);
       }
     }, 10000);
   }
-//    window.setTimeout(function() {
-//      var div1 = getFirstElementByXPath('id("FeedlyTabs")/div[2]/div[@style="margin-top:32px; margin-bottom:32px"]');
-//      if (div1) {
 
-
-//        var div2 = document.createElement('div');
- //       div2.className = 'tab';
-//       var div2 = document.createElement('div');
-//        div2.className = div1.childNodes[0].getAttribute('class');
-//        div2.innerHTML = '<div class="header target"><div id="gm_fullfeed_settings-menu" style="color:inherit; padding-left:32px;" target="new" class="label">Feedeen Full Feed ' + loc[21] + '</div></div>';
-//        div1.appendChild(div2);
-//      }
-//    }, 10000);
-
-
-
-
-
-
-
-
-//  }
-  /*if ($id('settings-button-menu')) {
-    var d1 = getFirstElementByXPath('id("settings-button-menu")');
-    if (d1) {
-      var d2 = document.createElement('div');
-      d2.id = 'gm_fullfeed_settings-menu2';
-      d2.className = 'goog-menuitem';
-      d2.setAttribute('role', 'menuitem');
-      d2.setAttribute('style', '-moz-user-select: none;');
-      d2.innerHTML = '<div id="gm_fullfeed_settings-menu2child" class="goog-menuitem-content">Feedeen Full Feed ' + loc[21] + '</div>';
-      d1.appendChild(d2);
-    }
-    $id('gm_fullfeed_settings-menu2').addEventListener('mouseover', function() {
-      $id('gm_fullfeed_settings-menu2').className = 'goog-menuitem goog-menuitem-highlight';
-    }, false);
-    $id('gm_fullfeed_settings-menu2').addEventListener('mouseout', function() {
-      $id('gm_fullfeed_settings-menu2').className = 'goog-menuitem';
-    }, false);
-  }*/
 
   $ids('general_key').addEventListener('keypress', function(e1) {
     e1.preventDefault();
@@ -1047,11 +991,10 @@ FullFeed.viewSettings = function(id) {
   var title;
   $ids('autoload_mode').selectedIndex = st.autoload;
   try {
-//    title = getFirstElementByXPath(returnXpathEntry() + '//a[@class="sourceTitle"]').textContent;
     title = returnFdExpanded().querySelector('a.fd_sitename').textContent; // Feedeen
   } catch(er) {}
   if (title) {
-    title = title.replace(/([*+?.()\[\]\\|\^$])/g, '\\$1');
+    title = title.replace(/([*+?.()\[\]\\|\^$])/g, '\\$1').replace(/^\s*(.*?)/, '$1');
     $ids('autoload_whitelist_title').value = '^' + title + '$';
     $ids('autoload_blacklist_title').value = '^' + title + '$';
   }
@@ -1079,7 +1022,6 @@ FullFeed.viewSettings = function(id) {
     $ids('security_allowiframeurl').disabled = true;
     $ids('security_allowiframeurl').parentNode.style.color = 'gray';
   }
-
   $ids('social_socialicon').checked = (st.socialicon) ? true : false;
   $ids('social_buzzurl').checked = (st.socialbuzzurl) ? true : false;
   $ids('social_delicious').checked = (st.socialdelicious) ? true : false;
@@ -1124,16 +1066,13 @@ FullFeed.checkRegister = function() {
       FullFeed.registerSocialIcons(currentItem);
     }
   }, 10);
-
 };
 
 FullFeed.registerWidgets = function() {
   var el, flag = false, c = new getCurrentItem();
-  if (!c.item_container) return;
-
-  /*
-  el = getElementsByXPath(returnXpathEntry() + '//div[@class="entryHeader"]/span');
-  if (el) {
+  if (!c.innerContents) return;
+  el = returnFdExpanded().querySelector('.fd_sitename').parentNode.querySelector('span.gm_fullfeed_checked');
+  /*if (el) {
     el.some(function(i) {
       if (hasClass(i, 'gm_fullfeed_checked')) {
         flag = true;
@@ -1141,11 +1080,8 @@ FullFeed.registerWidgets = function() {
       }
     });
   }
-  if (flag) return;
-*/
-	el = returnFdExpanded().querySelector('.fd_sitename').parentNode.querySelector('span.gm_fullfeed_checked');
-	if(el) return;
-//  var container = getFirstElementByXPath(returnXpathEntry() + '//div[@class="entryHeader"]');
+  if (flag) return;*/
+  if(el) return;
   var container = returnFdExpanded().querySelector('.fd_sitename').parentNode; // feedeen
   if (!container) return;
   itemSiteInfo = [];
@@ -1229,11 +1165,9 @@ FullFeed.registerWidgets = function() {
 FullFeed.registerSocialIcons = function() {
   if (!st.socialicon) return;
   var el, c = new getCurrentItem();
-  if (!c.item_container) return;
-//  el = getElementsByXPath(returnXpathEntry() + '//div[@class="entryHeader"]/span[@class="gm_fullfeed_socialicon"]');
+  if (!c.innerContents) return;
 	el = returnFdExpanded().querySelector('span.gm_fullfeed_socialicon');
   if (el) return;
-  //var container = getFirstElementByXPath(returnXpathEntry() + '//div[@class="entryHeader"]');
   var container = returnFdExpanded().querySelector('.fd_sitename').parentNode;
   var itemScheme = c.itemURL.slice(0, c.itemURL.indexOf("://")+3);
   var itemUrl2 = c.itemURL.slice(c.itemURL.indexOf("://")+3).replace(/#/g, '%23');
@@ -1241,9 +1175,6 @@ FullFeed.registerSocialIcons = function() {
   var twitter = {
     method: 'get',
     url: 'http://urls.api.twitter.com/1/urls/count.json?url=' + c.itemURL,
-    headers: {
-      'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-    },
     onload: function(res) {
       if (res.status === 200) {
         var info;
@@ -1265,9 +1196,6 @@ FullFeed.registerSocialIcons = function() {
   var delicious = {
     method: 'get',
     url: 'http://badges.del.icio.us/feeds/json/url/data?url=' + encodeURIComponent(c.itemURL),
-    headers: {
-      'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-    },
     onload: function(res) {
       if (res.status === 200) {
         var info;
@@ -1290,9 +1218,6 @@ FullFeed.registerSocialIcons = function() {
   var facebook = {
     method: 'get',
     url: 'https://api.facebook.com/method/fql.query?format=json&query=select+like_count+from+link_stat+where+url=%22' + encodeURIComponent(c.itemURL) + '%22',
-    headers: {
-      'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-    },
     onload: function(res) {
       if (res.status === 200) {
         var info;
@@ -1310,9 +1235,6 @@ FullFeed.registerSocialIcons = function() {
   var hatena = {
     method: 'get',
     url: 'http://api.b.st-hatena.com/entry.count?url=' + itemScheme + itemUrl2,
-    headers: {
-      'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-    },
     onload: function(res) {
       if (res.status === 200) {
         var total = Number(res.responseText);
@@ -1351,10 +1273,8 @@ FullFeed.registerSocialIcons = function() {
   if (st.socialyahoo) ac2(sY, yahoo);
   if (st.socialbuzzurl) ac2(sB, buzzurl);
   if (st.socialfc2) ac2(sC, fc2);
-  var inter, repeat = 0;
-  var check = function() {
+  var inter, repeat = 0, check = function() {
 
-//    var e = getElementsByXPath(returnXpathEntry() + '//div[@class="entryHeader"]/span[@class="gm_fullfeed_socialicon"]/a/img'), f = true;
     var e = returnFdExpanded().querySelectorAll('span.gm_fullfeed_socialicon > a > img'), f = true;
     repeat ++;
     if (e) {
@@ -1373,7 +1293,6 @@ FullFeed.registerSocialIcons = function() {
 };
 
 FullFeed.documentFilters = [
-// addTargetAttr
   (function(doc) {
     var anchors = getElementsByXPath('descendant-or-self::a', doc);
     if (anchors) {
@@ -1385,12 +1304,12 @@ FullFeed.documentFilters = [
 ];
 
 var get_active_item = function() {
+  //console.log('get_active_item');
   var item = {};
-  //var exp = getFirstElementByXPath(returnXpathEntry() + '//div[@class="entryHeader"]/a');
+  var exp = returnFdExpanded().querySelector('a.fd_url'); // Feedeen
   try {
-	var exp = returnFdExpanded().querySelector('a.fd_url');
-    item.url =  exp.href; // 記事のURL
-    item.title = returnFdExpanded().querySelector('.fd_title').innerHTML; // 記事のタイトル
+    item.url =  exp.href;
+    item.title = returnFdExpanded().querySelector('.fd_title').innerHTML; // Feedeen
   } catch(e) {}
   return item;
 };
@@ -1399,13 +1318,10 @@ var get_active_feed = function() {
   var feed = {};
   feed.url = ''; feed.title = '';
   try {
-    //var est = getFirstElementByXPath(returnXpathEntry() + '//a[@class="sourceTitle"]');
-	var est = returnFdExpanded().querySelector('a.fd_sitename');
+	var est = returnFdExpanded().querySelector('a.fd_sitename'); // Feedeen
     if (est) {
-//      feed.url = decodeURIComponent(est.href.replace(/^.*\/(?=http)/, ''));
-		feed.url = est.href; // 配信サイトURL
-     // feed.title = est.textContent;
-	   feed.title =  returnFdExpanded().querySelector('a.fd_sitename').innerHTML; // 配信サイト名
+		feed.url = est.href; //feedeen 配信サイトURL
+		feed.title =  returnFdExpanded().querySelector('a.fd_sitename').innerHTML; // Feedeen
     }
   } catch(e) {}
   return feed;
@@ -1461,27 +1377,17 @@ Array.prototype.remove = function(to_remove) {
 
 // itemの情報を格納するobjectのconstructor
 var getCurrentItem = function() {
-  this.item = get_active_item(true);
-  this.feed = get_active_feed();
-  this.itemURL = this.item.url;
-  var u = this.itemURL;
-/*
-  if (/^https?:\/\/www\.Feedeen\.com\/home#subscription\/feed\/https?:\/\/.+/.test(u)) {
-    u = u.slice(u.indexOf('/feed/')+6);
-    this.itemURL = decodeURIComponent(u.slice(0, u.indexOf('&')));
-  } else if (/^http:\/\/rd\.yahoo\.co\.jp\/rss\/l\/.+/.test(u)) {
-    if (/\/\*\-http/.test(u))
-      this.itemURL = decodeURIComponent(u.slice(u.indexOf('*-http')+2));
-    else if (/\/\*http/.test(u))
-      this.itemURL = decodeURIComponent(u.slice(u.indexOf('*http')+1));
-  }
-*/
-//  this.item_container = getFirstElementByXPath(returnXpathEntry() + '//div[contains(concat(" ", @class, " "), " entryBody ")]');
-	this.item_container = returnFdExpanded().querySelector('iframe').parentNode; // feedeen
+//console.log('getCurrentItem');
+	this.item = get_active_item(true);
+	this.feed = get_active_feed();
+	this.itemURL = this.item.url;
+	this.articleContainer = returnFdExpanded(); // Feedeen
+	this.innerContents = returnFdExpanded().querySelector('iframe').parentNode; // feedeen
   this.found = false;
 };
 
 var launchFullFeed = function(list, c, flag) {
+//console.log('launchFullFeed');
   if (typeof list.some !== 'function') return;
   state = 'launch';
   itemSiteInfo = [];
@@ -1491,11 +1397,11 @@ var launchFullFeed = function(list, c, flag) {
       try {
         var reg = new RegExp(i.url);
         if (i.url && (i.url.length <= 12 || !/^\^?https?/i.test(i.url))) {
-          if (/^:\/\//i.test(i.url)) i.url = '^https?' + i.url;
-          else if (/^\/\//i.test(i.url)) i.url = '^https?:' + i.url;
+          if (new RegExp('^://', 'i').test(i.url)) i.url = '^https?' + i.url;
+          else if (new RegExp('^//', 'i').test(i.url)) i.url = '^https?:' + i.url;
           else i.url = '^https?://' + i.url;
         }
-        if ((reg.test(c.itemURL) || reg.test(c.feed.url)) && i.url.length > 12) {
+        if (reg.test(c.itemURL) && i.url.length > 12) {
           if (flag === 'cache') {
             if (userCacheList.some(function(u) {
               if (u === c.feed.url) {
@@ -1593,29 +1499,29 @@ var launchFullFeed = function(list, c, flag) {
 };
 
 var initFullFeed = function(scroll) {
+//console.log("initFullFeed: ");
   var c = new getCurrentItem();
-//  console.log("initFullFeed: ");
-  if ((state && (state !== 'loaded' && state !== 'wait')) || !c.item.title || !c.item_container) return;
+  if ((state && (state !== 'loaded' && state !== 'wait')) || !c.item.title || !c.innerContents) return;
   message(loc[54], -1);
   if (st.notread) {
     var re = new RegExp(st.notread);
     if (re.test(c.item.title) || re.test(c.item.url) || re.test(c.feed.title)) {
       if (st.openitem) {
-        loadingStyle('open', c.item_container);
+        loadingStyle('open', c.articleContainer);
         window.setTimeout(function() {
           GM_openInTab(c.itemURL, true);
         }, 10);
         window.setTimeout(function() {
-          loadingStyle('remove', c.item_container);
+          loadingStyle('remove', c.articleContainer);
         }, 1000);
         return message(loc[49], 2000);
       } else return message(loc[8]);
     }
   }
   var launch = function() {
-    if (hasClass(c.item_container, 'gm_fullfeed_loaded')) {
+    if (hasClass(c.innerContents, 'gm_fullfeed_loaded')) {
       if (st.autopagerize) {
-        FullFeed.checkNextPage(c.item_container);
+        FullFeed.checkNextPage(c.innerContents);
         if (nextPageLink) {
           c.itemURL = nextPageLink.href;
           launchFullFeed(userSiteInfo, c, 'set');
@@ -1629,10 +1535,10 @@ var initFullFeed = function(scroll) {
             });
           }
           if (!c.found) launchFullFeed([], c, 'search');
-          loadingStyle('add', c.item_container);
+          loadingStyle('add', c.articleContainer);
           return message(loc[4], -1);
         } else if (!scroll) {
-          if (c.item_container.className.split(/\s+/).filter(function(i) {
+          if (c.innerContents.className.split(/\s+/).filter(function(i) {
             return new RegExp(/^http/).test(i);
           }).length > 1) return message(loc[7]);
           else return message(loc[9]);
@@ -1654,9 +1560,6 @@ var initFullFeed = function(scroll) {
     GM_xmlhttpRequest({
       method: 'get',
       url: 'http://api.longurl.org/v2/expand?format=json&url=' + u,
-      headers: {
-        'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-      },
       onload: function(res) {
         if (res.status === 200) {
           try {
@@ -1677,9 +1580,6 @@ var initFullFeed = function(scroll) {
     GM_xmlhttpRequest({
       method: 'get',
       url: 'http://www.unshorten.it/api1.0.php?responseFormat=text&shortURL=' + u,
-      headers: {
-        'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-      },
       onload: function(res) {
         if (res.status === 200) {
           try {
@@ -1702,9 +1602,6 @@ var initFullFeed = function(scroll) {
       GM_xmlhttpRequest({
         method: 'HEAD',
         url: c.itemURL,
-        headers: {
-          'User-Agent': navigator.userAgent + ' Greasemonkey (FeedeenFullFeed)'
-        },
         onload: function(res) {
           if (res.status === 200 && res.finalUrl) {
             if (/^https?:\/\/t.co\/.+/.test(res.finalUrl)) longurl(res.finalUrl);
@@ -1746,8 +1643,7 @@ var initFullFeed = function(scroll) {
           c.feed.url = c.itemURL;
         } else if (rep[i + 1] === 'Link') {
           try {
-            //var u = getElementsByXPath(returnXpathEntry() + '//div[contains(concat(" ", @class, " "), " entryBody ")]//a');
-			var u = returnFdExpanded().querySelector('iframe > a'); // 要改善。iframe内のaタグを指すようにする
+			var u = returnFdExpanded().querySelector('iframe > a'); // 要改善。iframe内のaタグを指すようにしたい
             if (u) excludeUrl(u);
           } catch(er) {}
         }
@@ -1759,100 +1655,32 @@ var initFullFeed = function(scroll) {
 };
 
 var loadingStyle = function(flag, elm) {
-  
+  if (!elm) return;
+  var s1 = 'gm_fullfeed_loading';
+  var s2 = 'gm_fullfeed_opened';
+  if (flag === 'add') addClass(elm, s1);
+  else if (flag === 'open') addClass(elm, s2);
+  else if (flag === 'remove') {
+    removeClass(elm, s1);
+    removeClass(elm, s2);
+  }
 };
 
 var createMessageBox = function() {
   var div = document.createElement('div');
-
-
   div.id = 'gm_fullfeed_message';
   div.className = 'gm_fullfeed_hidden';
   div.innerHTML = '';
   document.body.appendChild(div);
 };
 
-
+// For Feedeen
 var returnFdExpanded = function() {
 	return document.querySelector('.fd_expanded');
 }
 var returnXpathEntry = function() {
-  var t1 = 'pageActionLayout', t2 = 'pageLayoutAction selected';
-  var fo = ($id(t1 + '0').className === t2) ? 'T'
-            : ($id(t1 + '4').className === t2) ? 'M'
-            : ($id(t1 + '6').className === t2) ? 'C' : 'F';
-  return (fo === 'T') ? 'id("timeline")//div[@class="inlineFrame"]'
-      : (fo === 'F') ? 'id("timeline")//div[contains(concat(" ", @class, " "), " selectedEntry ")]'
-      : null;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  console.log("Warning!: returnXpathEntry");
+  return 'id("subscriptions_articles")/div[contains(concat(" ", @class, " "), " article_current ")]';
 };
 
 
@@ -1865,6 +1693,7 @@ var cacheInfo, cacheAPInfo, userCache, userCacheAP, userCacheList, userCacheList
 
 
 var init = function() {
+//console.log('init:');
   FullFeed.loadSettings();
   cacheInfo = FullFeed.getCache('cache');
   cacheAPInfo = FullFeed.getCache('cacheAP');
@@ -1872,7 +1701,7 @@ var init = function() {
   userCacheAP = FullFeed.getCache('userCacheAP');
   userCacheList = FullFeed.getCache('userCacheList');
   userCacheListAP = FullFeed.getCache('userCacheListAP');
-  if (typeof GM_registerMenuCommand === 'function') {
+  if (GM_registerMenuCommand && typeof GM_registerMenuCommand === 'function') {
     GM_registerMenuCommand('Feedeen Full Feed - reset cache', function() {
       if (window.confirm(loc[15])) FullFeed.resetCache();
     });
@@ -1884,28 +1713,15 @@ var init = function() {
   FullFeed.createSettings();
   createMessageBox();
 };
-
+// InoReader Full Feedにはないけど保留
 window.clearInterval(initInterval);
 initInterval = window.setInterval(function() {
-//  if ($id('FeedeenPage')) {
  if (document.querySelector('.fd_itemlist')) {
     window.clearInterval(initInterval);
     init();
   }
 }, 500);
-
-
-
-
-
-
-
-
-
-
-
-
-document.addEventListener('keyup', function(e) {
+  document.addEventListener('keyup', function(e) {
   var key = (isNaN(st.basekey)) ? st.basekey.toUpperCase().charCodeAt(0) : Number(st.basekey);
   var el1 = $ids('general_key'), el2, flag = false;
   if (e.target.id === 'gm_fullfeed_settings-general_key') {
@@ -1923,9 +1739,8 @@ document.addEventListener('keyup', function(e) {
     if (e.altKey && e.ctrlKey && e.shiftKey) {
       if (window.confirm(loc[15])) FullFeed.resetCache();
     } else if (e.ctrlKey && e.shiftKey) {
-
-      //el2 = getElementsByXPath(returnXpathEntry() + '//span[@class=" gm_fullfeed_checked"]', document);
       el2 = returnFdExpanded().querySelector('span.gm_fullfeed_checked');
+	  //console.log('el2=' + el2);
       if (el2) {
 //        el2.forEach(function(i) {
 //          if (hasClass(i, 'gm_fullfeed_checked')) flag = true;
@@ -1948,9 +1763,8 @@ document.addEventListener('keyup', function(e) {
     } else initFullFeed();
   }
   FullFeed.checkRegister();
-}, false);
-
-document.addEventListener('click', function(e) {
+  }, false);
+  document.addEventListener('click', function(e) {
   if (e.button >= 2) return;
   if (e.button === 0 && e.target.id && /^gm_fullfeed_settings-/.test(e.target.id)) {
     var set = $id('gm_fullfeed_settings');
@@ -2146,10 +1960,7 @@ document.addEventListener('click', function(e) {
     }
   } else if (hasClass(e.target, 'gm_fullfeed_checked_icon')) {
     if ((e.button === 0 && e.ctrlKey) || e.button === 1) FullFeed.viewSettings('autoload');
-    else if (e.button === 0) {
-		//console.log("click -> initFullFeed");
-		initFullFeed();
-	}
+      else if (e.button === 0) initFullFeed();
   } else if (e.button === 0 && e.target.parentNode && e.target.parentNode.parentNode && e.target.parentNode.parentNode.id === 'gm_fullfeed_settings-siteinfo_disableitemlist' && e.target.nodeName === 'INPUT') {
     var temp = $ids('siteinfo_disableitem').value.split('\n');
     if (e.target.checked) {
@@ -2170,10 +1981,9 @@ document.addEventListener('click', function(e) {
     });
     $ids('siteinfo_disableitem').value = temp.join('\n');
   } else if (e.button === 0) FullFeed.checkRegister();
-}, true);
+  }, true);
 
 document.addEventListener('scroll', function() {
-  //if ($id('timeline') && $id('timeline').className === 'entryList u0EntryList') {
   if (document.querySelector('.fd_itemlist')) {
     window.setTimeout(function() {
       if (st.autopagerize) FullFeed.checkScroll();
@@ -2181,22 +1991,10 @@ document.addEventListener('scroll', function() {
     }, 1000);
   } else if (st.autopagerize) {
     var c = new getCurrentItem();
-    if (hasClass(c.item_container, 'gm_fullfeed_loaded')) FullFeed.checkScroll();
+      if (hasClass(c.innerContents, 'gm_fullfeed_loaded')) FullFeed.checkScroll();
   }
-}, false);
-
-
-
-
-
-
-
-
-
-
-
-
-
+  }, false);
+//};
 
 
 // == [Utility] =================================
@@ -2285,15 +2083,9 @@ function relativeToAbsolutePath(htmldoc, base) {
 }
 
 function _rel2abs(url, top, current, base) {
-  if (/^https?:\/\//.test(url)) {
-    return url;
-  } else if (url.indexOf('/') === 0) {
-    return top + url;
-  } else if (url.indexOf('#') === 0) {
-    return base + url;
-  } else {
-    return current + url;
-  }
+  return (new RegExp('^https?://').test(url)) ? url :
+      (url.indexOf('/') === 0) ? top + url :
+      (url.indexOf('#') === 0) ? base + url : current + url;
 }
 
 function message(mes, dur, typ) {
@@ -2329,7 +2121,7 @@ function createHTMLDocumentByString(str) {
     htmlDoc = document.cloneNode(false);
     htmlDoc.appendChild(htmlDoc.importNode(document.documentElement, false));
   } catch(e) {
-    htmlDoc = document.implementation.createDocument(null, 'html', null);
+    htmlDoc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html', null);
   }
   var fragment = createDocumentFragmentByString(html);
   try {
