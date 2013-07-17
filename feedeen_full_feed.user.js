@@ -12,7 +12,7 @@
 // @grant    GM_registerMenuCommand
 // @grant    GM_setClipboard
 // @grant    GM_xmlhttpRequest
-// @version    0.2
+// @version    0.21
 // ==/UserScript==
 
 // Based on "Feedly Full Feed"    : http://userscripts.org/scripts/show/171868
@@ -24,7 +24,7 @@
 var CSS = [
   '.fd_itemlist .expanded .fd_sitename img { border: none; vertical-align: text-top; }',
   '.fd_itemlist .expanded .fd_sitename span a { margin: 0 3px; }',
-  '.fd_itemlist .expanded iframe .clear { font-size: inherit !important; height: auto !Important; width: auto !important; }',
+  '.fd_itemlist .expanded .clear { font-size: inherit !important; height: auto !Important; width: auto !important; }',
   '.gm_fullfeed_loading { border-color: limegreen !important; }',
   '.gm_fullfeed_loaded * { position: static !important; }',
   '.gm_fullfeed_opened { border-color: gold !important; }',
@@ -285,7 +285,7 @@ var FullFeed = function(info, c, flag) {
     else if (/\/\*http/.test(u))
       this.requestURL = decodeURIComponent(u.slice(u.indexOf('*http')+1));
   }
-  this.itemInfo.item_body = returnFdExpanded().querySelector('iframe').parentNode;
+    this.itemInfo.item_body = returnFdExpanded().querySelector('.fd_body');
 //console.log(this.itemInfo.item_body);
   var encode = this.info.enc || document.characterSet;
   if (flag === 'next' && this.itemInfo.innerContents) {
@@ -470,8 +470,15 @@ FullFeed.prototype.requestLoad = function(res, c) {
     }
   }
   if (entry) {
-    if (!hasClass(c.innerContents, 'gm_fullfeed_loaded'))
+	console.log('entry: ' + entry);
+	console.log(c.innerContents);
+    if (!hasClass(c.innerContents, 'gm_fullfeed_loaded')) {
+		console.log('gmfullfeedloadedいない！けす！');
       this.removeEntry();
+	 } else {
+		console.log('gmfullfeedloadedいない！');
+		console.log(c.innerContents);
+	}
     entry = this.addEntry(entry, c);
     if (!tmpElm && st.autosearch) this.requestEnd(c, true);
     else this.requestEnd(c);
@@ -663,6 +670,7 @@ FullFeed.prototype.removeEntry = function() {
 };
 
 FullFeed.prototype.addEntry = function(entry, c) {
+console.log('addEntry!');
   var url = this.requestURL || c.itemURL;
   var ic = (c.innerContents.id) ? $id(c.innerContents.id) : c.innerContents;
   var div = document.createElement('div');
@@ -919,9 +927,12 @@ FullFeed.createSettings = function() {
       if (div1) {
         var div2 = document.createElement('div');
 		div2.id = 'gm_fullfeed_settings-menu';
-        div2.className = div1.childNodes[0].getAttribute('class');
-        div2.innerHTML = '<div id="gm_fullfeed_settings-menu" style="color:inherit;" target="new" class="label">Feedeen Full Feed ' + loc[21] + '</div>';
-        div1.appendChild(div2);
+		div2.className = div1.childNodes[0].getAttribute('class');
+		div2.setAttribute('id','gm_fullfeed_settings-menu');
+		div2.setAttribute('role','button');
+		div2.setAttribute('style','-moz-user-select: none;');
+		div2.innerHTML = 'FullFeed' + loc[21];
+		div1.appendChild(div2);
       }
     }, 10000);
   }
@@ -1306,8 +1317,8 @@ FullFeed.documentFilters = [
 var get_active_item = function() {
   //console.log('get_active_item');
   var item = {};
-  var exp = returnFdExpanded().querySelector('a.fd_url'); // Feedeen
   try {
+    var exp = returnFdExpanded().querySelector('a.fd_url'); // Feedeen
     item.url =  exp.href;
     item.title = returnFdExpanded().querySelector('.fd_title').innerHTML; // Feedeen
   } catch(e) {}
@@ -1382,8 +1393,8 @@ var getCurrentItem = function() {
 	this.feed = get_active_feed();
 	this.itemURL = this.item.url;
 	this.articleContainer = returnFdExpanded(); // Feedeen
-	this.innerContents = returnFdExpanded().querySelector('iframe').parentNode; // feedeen
-  this.found = false;
+	this.innerContents = returnFdExpanded().querySelector('.fd_body'); // feedeen
+	this.found = false;
 };
 
 var launchFullFeed = function(list, c, flag) {
