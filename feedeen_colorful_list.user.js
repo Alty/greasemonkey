@@ -4,6 +4,7 @@
 // @updateURL	http://userscripts.org/scripts/show/172431.meta.js
 // @description Colorful Feedeen!
 // @include     http://feedeen.com/d
+// @include     https://www.feedeen.com/d
 // @version     0.1
 // @grant       GM_addStyle
 // @author     Alty <fujihisa@gmail.com>
@@ -50,7 +51,9 @@ function computeColor(title) {
 				var title = titleA.innerHTML;								// 拾ったAタグのテキスト拾う
 				title = title.replace(/\W/g, "-");							// 拾ったテキストを-に置換
 				uncolored.setAttribute("colored", title);				// 拾ったテキストにcolored属性付ける
-				uncolored.querySelector(".fd_title").parentNode.setAttribute("colored", title);
+				var titleEl = uncolored.querySelector(".fd_title").parentNode;
+				titleEl.parentNode.setAttribute("colored", title);
+				titleEl.previousSibling.setAttribute("colored", title);
 
 	            if (colors[title] == undefined) {
 					var color = computeColor(title);	// 拾ったテキスト用色計算
