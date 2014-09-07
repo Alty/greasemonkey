@@ -6,6 +6,7 @@
 // @namespace  http://userscripts.org/scripts/show/172673
 // @updateURL  http://userscripts.org/scripts/show/172673.meta.js
 // @include    http://feedeen.com/d
+// @include    https://www.feedeen.com/d
 // @grant    GM_addStyle
 // @grant    GM_log
 // @grant    GM_openInTab
